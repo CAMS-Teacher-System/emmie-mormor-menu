@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>สั่งอาหาร - EMMiE MorMor</title>
+  
+  <!-- Bootstrap 5 & Font -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- LIFF SDK & Supabase SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      /* ธีมสี EMMiE MorMor แซลมอนสไตล์ญี่ปุ่น */
+      --ocean-blue: #1A365D;    /* สีน้ำเงินเข้มจากเกลียวคลื่น */
+      --ocean-light: #2B6CB0;   /* สีน้ำเงินสว่าง */
+      --salmon-orange: #FF6B35; /* สีส้มแซลมอนสว่างสดใส */
+      --japan-red: #E53E3E;     /* สีแดงสไตล์ญี่ปุ่น (เสาโทริอิ) */
+      --peach-cream: #FFF8F0;   /* สีครีมละมุนพื้นหลัง */
+    }
+
+    body {
+      font-family: 'Prompt', sans-serif;
+      background-color: var(--peach-cream);
+      /* 🔴 เพิ่มลายเกลียวคลื่นแบบญี่ปุ่น (Seigaiha) ที่พื้นหลัง */
+      background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231a365d' fill-opacity='0.05'%3E%3Cpath d='M10 16c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845-5.603 0-10.15 4.547-10.15 10.15 0 1.05.158 2.063.453 3.018A12.183 12.183 0 0 0 0 32v2a14.168 14.168 0 0 1 2.215-7.785A12.15 12.15 0 0 1 10 16zm26 0c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845-5.603 0-10.15 4.547-10.15 10.15 0 1.05.158 2.063.453 3.018A12.183 12.183 0 0 0 26 32v2a14.168 14.168 0 0 1 2.215-7.785A12.15 12.15 0 0 1 36 16zM0 16c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845C-.488 12.56-.632 12.396-1.5 12.2V16zm52 0c-4.238 0-7.854 2.457-9.49 6.002-.583-.452-1.218-.84-1.89-1.157 1.391-4.004 5.234-6.845 9.845-6.845v4zM10 8c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845-5.603 0-10.15 4.547-10.15 10.15 0 1.05.158 2.063.453 3.018A12.183 12.183 0 0 0 0 24v2a14.168 14.168 0 0 1 2.215-7.785A12.15 12.15 0 0 1 10 8zm26 0c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845-5.603 0-10.15 4.547-10.15 10.15 0 1.05.158 2.063.453 3.018A12.183 12.183 0 0 0 26 24v2a14.168 14.168 0 0 1 2.215-7.785A12.15 12.15 0 0 1 36 8zM0 8c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845C-.488 4.56-.632 4.396-1.5 4.2V8zm52 0c-4.238 0-7.854 2.457-9.49 6.002-.583-.452-1.218-.84-1.89-1.157 1.391-4.004 5.234-6.845 9.845-6.845v4zM23 0c4.238 0 7.854 2.457 9.49 6.002.583-.452 1.218-.84 1.89-1.157-1.391-4.004-5.234-6.845-9.845-6.845-5.603 0-10.15 4.547-10.15 10.15 0 1.05.158 2.063.453 3.018A12.183 12.183 0 0 0 13 16v2a14.168 14.168 0 0 1 2.215-7.785A12.15 12.15 0 0 1 23 0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      /* ให้ลายพื้นหลังอยู่กับที่ตอนเลื่อนหน้าจอ */
+      background-attachment: fixed;
+      font-size: 0.95rem; 
+      padding-bottom: 110px;
+      color: #2D3748;
+    }
+
+    /* Navbar ธีมเกลียวคลื่น */
+    .navbar { 
+      background: linear-gradient(135deg, var(--ocean-blue), var(--ocean-light)); 
+      padding: 15px; 
+      border-bottom: 5px solid var(--salmon-orange); 
+      box-shadow: 0 4px 15px rgba(26, 54, 93, 0.2);
+    }
+    .navbar-brand { color: white !important; font-weight: 700; font-size: 1.3rem; letter-spacing: 0.5px; }
+    
+    /* การ์ดเมนูอาหาร */
+    .card { 
+      border: none; 
+      border-radius: 16px; 
+      box-shadow: 0 8px 25px rgba(26, 54, 93, 0.08); 
+      background: white; 
+      overflow: hidden; 
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:active { transform: scale(0.98); }
+    .product-img { height: 160px; object-fit: cover; cursor: pointer; }
+    
+    /* ป้ายราคาสะดุดตา */
+    .price-tag {
+      position: absolute; top: 12px; right: 12px;
+      background: linear-gradient(135deg, var(--salmon-orange), var(--japan-red)); 
+      color: white;
+      padding: 8px 18px; border-radius: 25px; font-weight: 700;
+      font-size: 1.15rem; 
+      box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+      border: 2px solid white;
+    }
+
+    /* ปุ่มเพิ่มลดจำนวน */
+    .qty-control { background: #F7FAFC; border-radius: 25px; padding: 6px 12px; border: 1px solid #E2E8F0; }
+    .qty-btn { 
+      width: 34px; height: 34px; border-radius: 50%; border: none; 
+      font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .qty-btn.minus { background: white; color: var(--ocean-blue); border: 1px solid #CBD5E1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .qty-btn.plus { background: var(--ocean-blue); color: white; box-shadow: 0 2px 6px rgba(26, 54, 93, 0.3); }
+    .qty-btn:active { transform: scale(0.85); }
+
+    /* Footer ตะกร้าสินค้า */
+    .footer-bar {
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: linear-gradient(135deg, var(--ocean-blue), var(--ocean-light)); 
+      color: white;
+      padding: 20px 24px; box-shadow: 0 -5px 25px rgba(26, 54, 93, 0.2); z-index: 1030;
+      border-top: 5px solid var(--salmon-orange);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+    
+    /* ปุ่มสั่งอาหาร / ยืนยัน */
+    .btn-checkout {
+      background: linear-gradient(135deg, var(--salmon-orange), #FF8C42); 
+      color: white;
+      border-radius: 50px; font-weight: 700; font-size: 1.15rem; border: none;
+      padding: 10px 24px;
+      box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-checkout:disabled { background: #A0AEC0; color: #E2E8F0; box-shadow: none; }
+    .btn-checkout:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4); }
+    
+    #checkout-page { display: none; }
+    
+    /* รูปโปรไฟล์ */
+    .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--salmon-orange); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+    /* ป้ายแจ้งเตือนออเดอร์ (Banner) */
+    .alert-custom {
+      background-color: white;
+      border-left: 6px solid var(--ocean-blue);
+      border-radius: 12px;
+    }
+
+    /* Modal ตกแต่ง */
+    .modal-content { border-radius: 16px; border: none; }
+    .modal-header { border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom: 2px solid var(--salmon-orange) !important; background-color: var(--peach-cream) !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar sticky-top shadow-sm py-3">
+    <div class="container-fluid justify-content-center">
+      <span class="navbar-brand mb-0 text-center">🏮 EMMiE MorMor ยินดีต้อนรับ 🐟</span>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+
+    <!-- แถบแจ้งเตือนสถานะออเดอร์ -->
+    <div id="active-order-banner" class="alert alert-custom shadow-sm mb-4 p-3" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="fw-bold mb-1" style="color: var(--ocean-blue);">สถานะออเดอร์ของคุณ 🍳</h6>
+          <small class="text-muted fw-bold" id="active-order-text">...</small>
+        </div>
+        <button class="btn btn-sm text-white shadow-sm fw-bold" style="background: var(--salmon-orange); border-radius: 20px; padding: 6px 14px;" onclick="viewMyOrders()">🔍 ดูออเดอร์ของคุณ</button>
+      </div>
+      <div id="order-more-hint" class="text-center mt-3 pt-2 border-top" style="border-color: #EDF2F7 !important;">
+        <small class="fw-bold" style="color: var(--salmon-orange);">✨ สามารถเลือกเมนูด้านล่าง เพื่อสั่งเป็นบิลใหม่เพิ่มได้</small>
+      </div>
+    </div>
+    
+   <!-- ================= หน้าจอแจ้งเตือนเมื่อปิดรับออเดอร์ ================= -->
+    <div id="store-closed-banner" class="text-center py-5" style="display: none; background: white; border-radius: 16px; box-shadow: 0 8px 25px rgba(26, 54, 93, 0.08);">
+      <div style="font-size: 4rem; margin-bottom: 10px;">⛔</div>
+      <h4 class="fw-bold text-danger mb-3">ขณะนี้ ปิดรับออเดอร์แล้ว</h4>
+      <p class="text-muted" style="font-size: 1rem;">
+        แอดมินกำลังสรุปยอดเพื่อจัดเตรียมวัตถุดิบครับ<br>
+        ระบบจะเปิดรับออเดอร์ใหม่ในรอบถัดไป
+      </p>
+    </div>
+
+    <!-- หน้า 1: เลือกเมนู -->
+    <div id="menu-page">
+      <div class="row g-3" id="product-list">
+        <div class="col-12 text-center text-muted py-5">
+          <div class="spinner-border text-primary mb-3" role="status" style="color: var(--ocean-blue) !important;"></div><br>
+          กำลังโหลดเมนูอาหาร...
+        </div>
+      </div>
+    </div>
+
+    <!-- หน้า 2: ตะกร้าและข้อมูลจัดส่ง -->
+    <div id="checkout-page">
+      <button class="btn btn-light btn-lg mb-4 rounded-pill px-4 text-start shadow-sm fw-bold border" style="color: var(--ocean-blue);" onclick="togglePage('menu')">
+        ← กลับไปหน้าเมนู
+      </button>
+      
+      <div class="card mb-4 border-0">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-3" style="color: var(--ocean-blue);">📝 สรุปคำสั่งซื้อ</h5>
+          <div id="order-summary" class="mb-3" style="font-size: 1.1rem; color: #4A5568;"></div>
+          <div class="d-flex justify-content-between border-top pt-3 mt-2">
+            <span class="fw-bold" style="color: var(--ocean-blue); font-size: 1.2rem;">ยอดรวมทั้งสิ้น</span>
+            <span class="fw-bold fs-3" style="color: var(--salmon-orange);">฿<span id="summary-total">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4 border-0">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-4" style="color: var(--ocean-blue);">👤 ข้อมูลลูกค้าและจัดส่ง</h5>
+          
+          <div class="d-flex align-items-center mb-4 p-3 rounded" style="background: #F7FAFC; border: 1px solid #E2E8F0;">
+            <img src="https://via.placeholder.com/60" id="profile-img" class="profile-img me-3">
+            <div>
+              <div class="fw-bold fs-5" id="profile-name" style="color: var(--ocean-blue);">ลูกค้า LINE</div>
+              <small class="text-muted">ข้อมูลเชื่อมต่อจากระบบ LINE</small>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color: var(--ocean-blue);">เบอร์โทรศัพท์ติดต่อ <span class="text-danger">*</span></label>
+            <input type="tel" inputmode="numeric" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="form-control form-control-lg bg-light border-0 shadow-sm" id="cust-phone" placeholder="ระบุเบอร์โทรศัพท์ (ตัวเลข 10 หลัก)">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color: var(--ocean-blue);">สถานที่จัดส่ง <span class="text-danger">*</span></label>
+            <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="cust-address" rows="2" placeholder="ระบุตึก, ชั้น, ห้อง หรือสถานที่จัดส่งให้ชัดเจน"></textarea>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color: var(--ocean-blue);">วิธีการชำระเงิน</label>
+            <select class="form-select form-select-lg bg-light border-0 shadow-sm mb-2 fw-bold" id="payment-method" style="color: #4A5568;" onchange="toggleSlipUpload(this.value)">
+              <option value="cod">🚚 ชำระเงินปลายทาง (COD)</option>
+              <option value="transfer">📱 โอนเงินผ่านธนาคาร</option>
+            </select>
+          </div>
+
+          <!-- ซ่อนช่องอัปโหลดสลิปไว้ก่อน จะแสดงเมื่อเลือกโอนเงิน -->
+          <div class="mb-3 p-4 rounded shadow-sm" id="slip-upload-section" style="display: none; background: #F7FAFC; border: 2px dashed #CBD5E1;">
+            <label class="form-label fw-bold text-dark">แนบสลิปโอนเงิน <span class="text-danger">*</span></label>
+            <input class="form-control" type="file" id="slip-file" accept="image/*">
+            <div class="mt-3 text-center p-2 rounded bg-white border">
+              <span class="fw-bold d-block text-success">ธนาคารกสิกรไทย</span>
+              <span class="fs-5 fw-bold" style="letter-spacing: 1px;">123-4-56789-0</span><br>
+              <small class="text-muted">ชื่อบัญชี: บจก. เอมมี่ มอมอร์</small>
+            </div>
+          </div>
+
+          <div class="p-3 mt-4 rounded text-center shadow-sm" style="background: rgba(26, 54, 93, 0.05); border: 1px dashed var(--ocean-blue);">
+            <h6 class="fw-bold mb-0" style="color: var(--ocean-blue);">🚚 เลือกชำระเงินปลายทาง (COD) สะดวกที่สุด!</h6>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer สำหรับยอดรวม -->
+  <div class="footer-bar d-flex justify-content-between align-items-center" id="footer-cart">
+    <div>
+      <div style="font-size: 0.95rem; color: #E2E8F0; font-weight: 500;">ยอดรวมตะกร้า</div>
+      <div class="fw-bold" style="font-size: 1.8rem; line-height: 1;">฿<span id="cart-total">0</span></div>
+    </div>
+    <button class="btn btn-checkout" onclick="togglePage('checkout')" id="btn-next" disabled>
+      ดำเนินการสั่งอาหาร ➔
+    </button>
+  </div>
+
+  <!-- Footer สำหรับยืนยัน -->
+  <div class="footer-bar text-center" id="footer-confirm" style="display: none;">
+    <button class="btn btn-checkout w-100 py-3 fs-4" id="btn-submit" onclick="submitOrder()">
+      ยืนยันคำสั่งซื้อ
+    </button>
+  </div>
+
+  <!-- ================= Modal ดูรายการออเดอร์ของลูกค้า ================= -->
+  <div class="modal fade" id="customerOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" style="color: var(--ocean-blue);">🧾 รายการออเดอร์ของคุณ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3" id="customer-order-details" style="background-color: #F7FAFC;">
+          <!-- ข้อมูลบิลจะมาแทรกตรงนี้ -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // ==========================================
+    // 1. ตั้งค่าระบบ 
+    // ==========================================
+    const LIFF_ID = "2010982744-DmIXHl9N"; 
+    const SUPABASE_URL = 'https://npgsycfnjpqorwjavqrb.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wZ3N5Y2ZuanBxb3J3amF2cXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MTUzNzIsImV4cCI6MjEwMTQ5MTM3Mn0.FRr1WSpgI0tNiipNHXLpTWG4TIheDepZHxZrQ98GNjs';
+    
+    let supabaseClient;
+    let products = {}; 
+    let userProfile = { userId: "", displayName: "", pictureUrl: "" };
+    let isSubmitting = false;
+    let myPendingOrders = [];
+
+    // ==========================================
+    // 2. โหลดระบบตอนเปิดหน้าเว็บ (สำหรับ GitHub Pages)
+    // ==========================================
+    window.onload = async function() {
+      try {
+        // เชื่อมต่อ Supabase แบบปกติได้เลย เพราะไม่ได้อยู่ใน Iframe แล้ว
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        await liff.init({ liffId: LIFF_ID });
+        
+        // บังคับล็อกอินผ่าน LINE แบบ 100%
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        userProfile = {
+          userId: profile.userId,
+          displayName: profile.displayName,
+          pictureUrl: profile.pictureUrl
+        };
+        
+        document.getElementById('profile-img').src = userProfile.pictureUrl;
+        document.getElementById('profile-name').innerText = userProfile.displayName;
+
+        // เช็คสถานะ เปิด-ปิด ร้าน
+        const { data: storeData } = await supabaseClient.from('store_settings').select('*').eq('id', 1).single();
+        
+        let isStoreOpen = storeData ? storeData.is_open : true; 
+
+        if (storeData && storeData.auto_mode) {
+          const now = new Date();
+          const openTime = new Date(storeData.open_datetime);
+          const closeTime = new Date(storeData.close_datetime);
+          if (now >= openTime && now <= closeTime) isStoreOpen = true;
+          else isStoreOpen = false;
+        }
+        
+        if (!isStoreOpen) {
+          document.getElementById('menu-page').style.display = 'none';
+          document.getElementById('footer-cart').style.display = 'none';
+          const hint = document.getElementById('order-more-hint');
+          if(hint) hint.style.display = 'none';
+          
+          const banner = document.getElementById('store-closed-banner');
+          banner.style.display = 'block';
+          
+          if (storeData.auto_mode && new Date() < new Date(storeData.open_datetime)) {
+            const openStr = new Date(storeData.open_datetime).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+            banner.innerHTML += `<div class="mt-4 text-primary fw-bold px-3 py-2 bg-light rounded" style="display:inline-block;">เปิดรับออเดอร์รอบถัดไป:<br><span class="fs-5">${openStr} น.</span></div>`;
+          }
+          await checkActiveOrder(); 
+          return; 
+        }
+
+        await fetchActiveMenus();
+        await checkActiveOrder();
+      } catch (err) {
+        console.error("System Error:", err);
+        alert("ระบบขัดข้อง: " + err.message);
+      }
+    };
+
+    // ==========================================
+    // 3. จัดการเมนูและตะกร้า
+    // ==========================================
+    async function fetchActiveMenus() {
+      const { data, error } = await supabaseClient
+        .from('menus')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true }) 
+        .order('created_at', { ascending: false });
+
+      const container = document.getElementById('product-list');
+      if (error) {
+        container.innerHTML = `<div class="text-danger text-center">เกิดข้อผิดพลาด: ${error.message}</div>`;
+        return;
+      }
+      if (data.length === 0) {
+        container.innerHTML = `<div class="text-center text-muted py-5 fw-bold fs-5">ขณะนี้ไม่มีเมนูเปิดขายครับ</div>`;
+        return;
+      }
+
+      let html = '';
+      data.forEach(menu => {
+        products[menu.id] = { name: menu.name, price: menu.price, qty: 0 };
+        
+        html += `
+          <div class="col-12 col-md-6">
+            <div class="card h-100">
+              <div class="position-relative" onclick="addQty(${menu.id})">
+                <img src="${menu.image_url || 'https://via.placeholder.com/400x200?text=NO+IMAGE'}" class="product-img w-100">
+                <div class="price-tag">฿${menu.price}</div>
+              </div>
+              <div class="card-body p-3 d-flex flex-column justify-content-between">
+                <h5 class="fw-bold mb-3" style="color: var(--ocean-blue);">${menu.name}</h5>
+                <div class="qty-control d-flex justify-content-between align-items-center w-100 shadow-sm">
+                  <span class="fw-bold ms-2" style="font-size: 0.95rem; color: #4A5568;">จำนวน</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="qty-btn minus" onclick="updateQty(${menu.id}, -1)">-</button>
+                    <span id="qty-${menu.id}" class="fw-bold fs-4 text-center" style="color: var(--ocean-blue); width: 30px;">0</span>
+                    <button class="qty-btn plus" onclick="updateQty(${menu.id}, 1)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function updateQty(id, change) {
+      let newQty = products[id].qty + change;
+      if(newQty < 0) newQty = 0;
+      products[id].qty = newQty;
+      
+      document.getElementById(`qty-${id}`).innerText = newQty;
+      
+      // Effect เล็กน้อยตอนกดเพิ่มจำนวน
+      const qtySpan = document.getElementById(`qty-${id}`);
+      qtySpan.style.transform = "scale(1.3)";
+      qtySpan.style.transition = "transform 0.1s";
+      setTimeout(() => { qtySpan.style.transform = "scale(1)"; }, 150);
+
+      calculateTotal();
+    }
+
+    function addQty(id) {
+      updateQty(id, 1);
+    }
+
+    function calculateTotal() {
+      let total = 0;
+      for (const id in products) {
+        total += products[id].price * products[id].qty;
+      }
+      document.getElementById('cart-total').innerText = total.toLocaleString();
+      document.getElementById('btn-next').disabled = total === 0;
+    }
+
+    // ==========================================
+    // 4. สลับหน้าจอ ซ่อนโชว์สลิป และยืนยันคำสั่งซื้อ
+    // ==========================================
+    function togglePage(page) {
+      if(page === 'checkout') {
+        renderOrderSummary();
+        document.getElementById('menu-page').style.display = 'none';
+        document.getElementById('footer-cart').style.display = 'none';
+        document.getElementById('checkout-page').style.display = 'block';
+        document.getElementById('footer-confirm').style.display = 'block';
+      } else {
+        document.getElementById('checkout-page').style.display = 'none';
+        document.getElementById('footer-confirm').style.display = 'none';
+        document.getElementById('menu-page').style.display = 'block';
+        document.getElementById('footer-cart').style.display = 'flex';
+      }
+      window.scrollTo(0, 0);
+    }
+
+    function renderOrderSummary() {
+      let html = '';
+      let total = 0;
+      for (const id in products) {
+        if(products[id].qty > 0) {
+          let itemTotal = products[id].price * products[id].qty;
+          total += itemTotal;
+          html += `<div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                     <div><span class="fw-bold px-2 py-1 me-2 rounded" style="color: white; background: var(--salmon-orange); font-size: 0.9rem;">${products[id].qty}x</span> <span class="fw-bold text-dark">${products[id].name}</span></div>
+                     <span class="fw-bold" style="color: var(--ocean-blue);">฿${itemTotal.toLocaleString()}</span>
+                   </div>`;
+        }
+      }
+      document.getElementById('order-summary').innerHTML = html;
+      document.getElementById('summary-total').innerText = total.toLocaleString();
+    }
+
+    function toggleSlipUpload(method) {
+      const slipSection = document.getElementById('slip-upload-section');
+      if (method === 'transfer') {
+        slipSection.style.display = 'block';
+      } else {
+        slipSection.style.display = 'none';
+        document.getElementById('slip-file').value = ''; 
+      }
+    }
+
+    async function submitOrder() {
+      if (isSubmitting) return;
+      
+      const phone = document.getElementById('cust-phone').value;
+      const address = document.getElementById('cust-address').value;
+      const paymentMethod = document.getElementById('payment-method').value;
+      const slipFile = document.getElementById('slip-file').files[0];
+
+      if(!phone || phone.length < 9) {
+        alert("⚠️ กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้องครับ");
+        return;
+      }
+      
+      if(!address.trim()) {
+        alert("⚠️ กรุณาระบุสถานที่จัดส่งให้ชัดเจนครับ");
+        return;
+      }
+
+      if(paymentMethod === 'transfer' && !slipFile) {
+        alert("⚠️ กรุณาแนบสลิปโอนเงินเพื่อยืนยันคำสั่งซื้อครับ");
+        return;
+      }
+
+      let totalAmount = 0;
+      let orderItems = [];
+      for (const id in products) {
+        if(products[id].qty > 0) {
+          totalAmount += products[id].price * products[id].qty;
+          orderItems.push({
+            menu_name: products[id].name,
+            price: products[id].price,
+            quantity: products[id].qty
+          });
+        }
+      }
+
+      isSubmitting = true;
+      document.getElementById('btn-submit').innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังประมวลผล...';
+      document.getElementById('btn-submit').disabled = true;
+
+      try {
+        let finalSlipUrl = null;
+
+        if (paymentMethod === 'transfer' && slipFile) {
+          document.getElementById('btn-submit').innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังอัปโหลดสลิป...';
+          
+          const fileExt = slipFile.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+          
+          const { data: uploadData, error: uploadError } = await supabaseClient
+            .storage
+            .from('slips')
+            .upload(fileName, slipFile);
+
+          if (uploadError) throw new Error("อัปโหลดสลิปไม่สำเร็จ: " + uploadError.message);
+
+          const { data: publicUrlData } = supabaseClient
+            .storage
+            .from('slips')
+            .getPublicUrl(fileName);
+
+          finalSlipUrl = publicUrlData.publicUrl;
+        }
+
+        document.getElementById('btn-submit').innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึกข้อมูล...';
+
+        const { data: orderData, error: orderError } = await supabaseClient
+          .from('orders')
+          .insert([{
+            line_user_id: userProfile.userId,
+            line_display_name: userProfile.displayName,
+            line_picture_url: userProfile.pictureUrl,
+            phone_number: phone,
+            delivery_address: address,
+            total_amount: totalAmount,
+            payment_method: paymentMethod,
+            slip_url: finalSlipUrl, 
+            status: 'pending'
+          }])
+          .select();
+
+        if (orderError) throw orderError;
+        
+        const newOrderId = orderData[0].id;
+        const itemsToInsert = orderItems.map(item => ({ ...item, order_id: newOrderId }));
+
+        const { error: itemsError } = await supabaseClient
+          .from('order_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+
+        let notifyMessage = `\n🔔 มีออเดอร์ใหม่เข้ามาระบบ!\n`;
+        notifyMessage += `👤 ลูกค้า: ${userProfile.displayName}\n`;
+        notifyMessage += `📱 โทร: ${phone}\n`;
+        notifyMessage += `📍 จัดส่ง: ${address}\n`;
+        notifyMessage += `💰 ยอดรวม: ฿${totalAmount.toLocaleString()} (${paymentMethod === 'cod' ? 'เก็บปลายทาง' : 'โอนเงินแนบสลิป'})\n`;
+        notifyMessage += `📋 รายการอาหาร:\n`;
+        orderItems.forEach(item => { notifyMessage += `- ${item.menu_name} [${item.quantity} ที่]\n`; });
+        
+        // ส่งแจ้งเตือนผ่าน fetch API ไปยัง Google Apps Script
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1Wulil3CTaRDSLhnR8bCLPGk_YETBow-nTyX9cT50FZo6KGzwkyqCO72TqNCwJYyp/exec"; 
+        fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({ message: notifyMessage }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' } // เลี่ยงปัญหา CORS
+        }).catch(err => console.error("แจ้งเตือน LINE ไม่สำเร็จ:", err));
+
+        alert("✅ สั่งอาหารเรียบร้อยแล้ว! ขอบคุณที่ใช้บริการ EMMiE MorMor ครับ");
+        
+        for (const id in products) products[id].qty = 0;
+        document.querySelectorAll('[id^="qty-"]').forEach(el => el.innerText = "0");
+        document.getElementById('cust-phone').value = "";
+        document.getElementById('cust-address').value = "";
+        document.getElementById('payment-method').value = "cod";
+        toggleSlipUpload('cod');
+        calculateTotal();
+        togglePage('menu');
+        
+        await checkActiveOrder();
+
+      } catch (err) {
+        alert("❌ เกิดข้อผิดพลาด: " + err.message);
+      } finally {
+        isSubmitting = false;
+        document.getElementById('btn-submit').innerText = 'ยืนยันคำสั่งซื้อ';
+        document.getElementById('btn-submit').disabled = false;
+      }
+    }
+
+    // ==========================================
+    // 5. ระบบตรวจสอบสถานะออเดอร์ (แยกบิล)
+    // ==========================================
+    async function checkActiveOrder() {
+      if(!supabaseClient || !userProfile.userId) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('line_user_id', userProfile.userId)
+          .in('status', ['pending', 'preparing'])
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        myPendingOrders = data; 
+        const banner = document.getElementById('active-order-banner');
+        
+        if (data && data.length > 0) {
+          let totalPendingAmount = 0;
+          data.forEach(order => totalPendingAmount += Number(order.total_amount));
+          
+          let text = data.length === 1 
+            ? `1 บิล | ยอดรวม ฿${totalPendingAmount.toLocaleString()}`
+            : `${data.length} บิล | ยอดรวม ฿${totalPendingAmount.toLocaleString()}`;
+
+          document.getElementById('active-order-text').innerText = text;
+          banner.style.display = 'block';
+        } else {
+          banner.style.display = 'none';
+        }
+      } catch (err) {
+        console.error("เช็คสถานะออเดอร์ไม่สำเร็จ:", err.message);
+      }
+    }
+
+    // ==========================================
+    // 6. ฟังก์ชันแสดง Modal รายละเอียดบิลทั้งหมดของลูกค้า
+    // ==========================================
+    async function viewMyOrders() {
+      await checkActiveOrder(); 
+
+      if(myPendingOrders.length === 0) {
+        alert("ออเดอร์ของคุณได้รับการจัดส่งหรือดำเนินการเรียบร้อยแล้วครับ");
+        document.getElementById('active-order-banner').style.display = 'none';
+        return;
+      }
+      
+      const detailsContainer = document.getElementById('customer-order-details');
+      detailsContainer.innerHTML = `
+        <div class="text-center text-muted py-5">
+          <div class="spinner-border text-primary mb-3" role="status" style="color: var(--ocean-blue) !important;"></div><br>
+          กำลังโหลดออเดอร์ของคุณ...
+        </div>`;
+      
+      const modal = new bootstrap.Modal(document.getElementById('customerOrderModal'));
+      modal.show();
+
+      try {
+        const orderIds = myPendingOrders.map(o => o.id);
+        const { data: items, error } = await supabaseClient
+          .from('order_items')
+          .select('*')
+          .in('order_id', orderIds);
+
+        if (error) throw error;
+
+        let html = '';
+        
+        myPendingOrders.forEach((order) => {
+          const orderItems = items.filter(item => item.order_id === order.id);
+          const orderTime = new Date(order.created_at).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
+          
+          let statusBadge = '';
+          if(order.status === 'pending') statusBadge = '<span class="badge bg-secondary px-2 py-1 shadow-sm">รับออเดอร์แล้ว</span>';
+          else if(order.status === 'preparing') statusBadge = '<span class="badge bg-warning text-dark px-2 py-1 shadow-sm">กำลังจัดเตรียม</span>';
+
+          html += `
+            <div class="card mb-3 border-0 shadow-sm" style="border-radius: 12px;">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom-0">
+                <span class="fw-bold" style="color: var(--ocean-blue);">บิล #${order.id} <small class="text-muted fw-normal ms-1">(${orderTime} น.)</small></span>
+                ${statusBadge} 
+              </div>
+              <div class="card-body p-2 pt-0">
+                <table class="table table-sm table-borderless mb-0">
+                  <tbody>
+          `;
+          
+          orderItems.forEach(item => {
+            html += `
+                    <tr>
+                      <td class="ps-3 fw-bold text-dark py-2 align-middle">${item.menu_name}</td>
+                      <td class="text-center py-2 align-middle">
+                        <span class="fw-bold fs-6 px-2 py-1" style="color: var(--salmon-orange); background-color: rgba(255, 107, 53, 0.1); border-radius: 6px; display: inline-block; min-width: 35px;">
+                          x${item.quantity}
+                        </span>
+                      </td>
+                      <td class="text-end pe-3 fw-bold text-muted py-2 align-middle">฿${(item.price * item.quantity).toLocaleString()}</td>
+                    </tr>
+            `;
+          });
+          
+          html += `
+                  </tbody>
+                  <tfoot style="border-top: 1px dashed #E2E8F0;">
+                    <tr>
+                      <td colspan="2" class="text-end fw-bold pt-3 pb-2 text-muted">ยอดรวมบิลนี้</td>
+                      <td class="text-end fw-bold pt-3 pb-2 fs-5 pe-3" style="color: var(--salmon-orange);">฿${Number(order.total_amount).toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          `;
+        });
+        
+        detailsContainer.innerHTML = html;
+        
+      } catch(err) {
+        detailsContainer.innerHTML = `<div class="text-danger text-center py-5">เกิดข้อผิดพลาด: ${err.message}</div>`;
+      }
+    }
+
+    // ==========================================
+    // 7. ระบบรีเฟรชอัตโนมัติเมื่อค้างหน้าจอทิ้งไว้ (Idle Timeout)
+    // ==========================================
+    let idleMinutes = 0;
+    const MAX_IDLE_MINUTES = 10; 
+
+    function resetIdleTimer() {
+      idleMinutes = 0;
+    }
+
+    window.addEventListener('mousemove', resetIdleTimer);
+    window.addEventListener('touchstart', resetIdleTimer);
+    window.addEventListener('click', resetIdleTimer);
+    window.addEventListener('scroll', resetIdleTimer);
+    window.addEventListener('keypress', resetIdleTimer);
+
+    setInterval(() => {
+      idleMinutes++;
+      if (idleMinutes >= MAX_IDLE_MINUTES) {
+        console.log("ไม่มีการใช้งานเกินกำหนด ระบบกำลังรีเฟรช...");
+        window.location.reload(); 
+      }
+    }, 60000);
+    
+  </script>
+</body>
+</html>
