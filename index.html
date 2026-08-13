@@ -165,11 +165,9 @@
 
     <!-- หน้า 2: ตะกร้าและข้อมูลจัดส่ง -->
     <div id="checkout-page">
-      <button class="btn btn-light btn-lg mb-4 rounded-pill px-4 text-start shadow-sm fw-bold border" style="color: var(--ocean-blue);" onclick="togglePage('menu')">
-        ← กลับไปหน้าเมนู
-      </button>
       
-      <div class="card mb-4 border-0">
+      <!-- กล่องสรุปคำสั่งซื้อ -->
+      <div class="card mb-3 border-0 mt-2">
         <div class="card-body p-4">
           <h5 class="fw-bold mb-3" style="color: var(--ocean-blue);">📝 สรุปคำสั่งซื้อ</h5>
           <div id="order-summary" class="mb-3" style="font-size: 1.1rem; color: #4A5568;"></div>
@@ -180,6 +178,12 @@
         </div>
       </div>
 
+      <!-- 🔴 ย้ายปุ่มมาไว้ตรงนี้ พร้อมเปลี่ยนข้อความและปรับให้เต็มจอ (w-100) -->
+      <button class="btn btn-white btn-lg w-100 mb-4 rounded-pill shadow-sm fw-bold border text-center" style="color: var(--ocean-blue); background-color: white;" onclick="togglePage('menu')">
+        ← กลับไปหน้าเมนู/สั่งเพิ่ม
+      </button>
+
+      <!-- กล่องข้อมูลลูกค้า -->
       <div class="card mb-4 border-0">
         <div class="card-body p-4">
           <h5 class="fw-bold mb-4" style="color: var(--ocean-blue);">👤 ข้อมูลลูกค้าและจัดส่ง</h5>
@@ -206,7 +210,8 @@
             <label class="form-label fw-bold" style="color: var(--ocean-blue);">วิธีการชำระเงิน</label>
             <select class="form-select form-select-lg bg-light border-0 shadow-sm mb-2 fw-bold" id="payment-method" style="color: #4A5568;" onchange="toggleSlipUpload(this.value)">
               <option value="cod">🚚 ชำระเงินปลายทาง (COD)</option>
-              <option value="transfer">📱 โอนเงินผ่านธนาคาร</option>
+              <!-- ซ่อนตัวเลือกโอนเงินผ่านธนาคารไว้ชั่วคราวก่อน -->
+              <!-- <option value="transfer">📱 โอนเงินผ่านธนาคาร</option> -->
             </select>
           </div>
 
