@@ -372,6 +372,7 @@
     // 3. จัดการเมนูและตะกร้า
     // ==========================================
     async function fetchActiveMenus() {
+      // ประกาศแค่ครั้งเดียวตรงนี้
       const container = document.getElementById('product-list');
       
       // 🔴 แทรกตัวหมุนโหลดเมนูอาหาร (หลังจากยืนยันแล้วว่าร้านเปิด)
@@ -389,9 +390,8 @@
         .order('sort_order', { ascending: true }) 
         .order('created_at', { ascending: false });
 
-      // ... (โค้ดดึงข้อมูลด้านล่างให้คงไว้เหมือนเดิมครับ) ...
-
-      const container = document.getElementById('product-list');
+      // ❌ ลบคำว่า const container = document.getElementById('product-list'); บรรทัดนี้ที่เคยซ้ำออกไปเลย
+      
       if (error) {
         container.innerHTML = `<div class="text-danger text-center">เกิดข้อผิดพลาด: ${error.message}</div>`;
         return;
