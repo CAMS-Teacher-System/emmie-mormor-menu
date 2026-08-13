@@ -153,19 +153,22 @@
       </p>
     </div>
 
-    <!-- หน้า 1: เลือกเมนู -->
-    <div id="menu-page">
+    <!-- ================= ตัวโหลดหลัก (เช็คสถานะร้าน) ================= -->
+    <div id="main-loader" class="text-center py-5 mt-5">
+      <div class="spinner-border mb-3" role="status" style="color: var(--ocean-blue) !important; width: 3rem; height: 3rem;"></div>
+      <h5 class="fw-bold" style="color: var(--ocean-blue);">กำลังตรวจสอบสถานะร้าน...</h5>
+    </div>
+
+    <!-- หน้า 1: เลือกเมนู (ซ่อนไว้ก่อน ค่อยโชว์ถ้าร้านเปิด) -->
+    <div id="menu-page" style="display: none;">
       <div class="row g-3" id="product-list">
-        <div class="col-12 text-center text-muted py-5">
-          <div class="spinner-border text-primary mb-3" role="status" style="color: var(--ocean-blue) !important;"></div><br>
-          กำลังโหลดเมนูอาหาร...
-        </div>
+        <!-- ตัวหมุนโหลดเมนูอาหารจะถูกแทรกผ่าน JS ถ้าร้านเปิด -->
       </div>
     </div>
 
     <!-- หน้า 2: ตะกร้าและข้อมูลจัดส่ง -->
     <div id="checkout-page">
-      
+          
       <!-- กล่องสรุปคำสั่งซื้อ -->
       <div class="card mb-3 border-0 mt-2">
         <div class="card-body p-4">
@@ -235,7 +238,7 @@
   </div>
 
   <!-- Footer สำหรับยอดรวม -->
-  <div class="footer-bar d-flex justify-content-between align-items-center" id="footer-cart">
+    <div class="footer-bar justify-content-between align-items-center" id="footer-cart" style="display: none;">
     <div>
       <div style="font-size: 0.95rem; color: #E2E8F0; font-weight: 500;">ยอดรวมตะกร้า</div>
       <div class="fw-bold" style="font-size: 1.8rem; line-height: 1;">฿<span id="cart-total">0</span></div>
@@ -285,20 +288,19 @@
     let myPendingOrders = [];
 
     // ==========================================
-    // 2. โหลดระบบตอนเปิดหน้าเว็บ (ปรับลอจิกโหลดแบบคู่ขนาน ⚡️)
+    // 2. โหลดระบบตอนเปิดหน้าเว็บ (ตรวจสอบร้านก่อนโหลดเมนู)
     // ==========================================
     window.onload = async function() {
       try {
-        // 1. เชื่อมต่อ Supabase
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 2. ⚡️ สั่งให้โหลด LINE (LIFF) ทำงานอยู่เบื้องหลังทันที (ไม่ต้องรอให้เสร็จ)
+        // ดึงข้อมูล LINE (ปล่อยให้วิ่งเบื้องหลังไปพร้อมกัน)
         const initLiffTask = (async () => {
           try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) {
               liff.login();
-              return false; // หยุดการทำงานชั่วคราว รอให้ลูกค้าล็อกอินเสร็จ
+              return false;
             }
             const profile = await liff.getProfile();
             userProfile = {
@@ -313,9 +315,8 @@
           }
         })();
 
-        // 3. ⚡️ สั่งดึง "สถานะร้านค้า" มาเช็คก่อน (ดึงไปพร้อมๆ กับ LIFF เลยเพื่อประหยัดเวลา)
+        // 🔴 เช็คสถานะร้านค้า ก่อนเป็นอันดับแรก
         const { data: storeData } = await supabaseClient.from('store_settings').select('*').eq('id', 1).single();
-        
         let isStoreOpen = storeData ? storeData.is_open : true; 
 
         if (storeData && storeData.auto_mode) {
@@ -326,14 +327,11 @@
           else isStoreOpen = false;
         }
         
-        // 4. 🔴 ตรวจสอบสถานะร้าน "ก่อน" ที่จะดึงเมนู
+        // ปิดหน้าจอ "กำลังตรวจสอบสถานะร้าน..."
+        document.getElementById('main-loader').style.display = 'none';
+
         if (!isStoreOpen) {
-          // ซ่อนตะกร้า และโชว์ป้ายร้านปิดทันที
-          document.getElementById('menu-page').style.display = 'none';
-          document.getElementById('footer-cart').style.display = 'none';
-          const hint = document.getElementById('order-more-hint');
-          if(hint) hint.style.display = 'none';
-          
+          // ⛔️ ถ้าร้านปิด ให้แสดงป้ายร้านปิด และไม่ดึงเมนูอาหาร
           const banner = document.getElementById('store-closed-banner');
           banner.style.display = 'block';
           
@@ -342,23 +340,22 @@
             banner.innerHTML += `<div class="mt-4 text-primary fw-bold px-3 py-2 bg-light rounded" style="display:inline-block;">เปิดรับออเดอร์รอบถัดไป:<br><span class="fs-5">${openStr} น.</span></div>`;
           }
 
-          // รอแค่ข้อมูล LINE โหลดเสร็จเพื่อนำมายืนยันตัวตนดึงออเดอร์เก่า
           const isLiffReady = await initLiffTask;
           if (isLiffReady) {
             document.getElementById('profile-img').src = userProfile.pictureUrl;
             document.getElementById('profile-name').innerText = userProfile.displayName;
             await checkActiveOrder(); 
           }
-          return; // ⛔️ สั่งจบการทำงานตรงนี้ ระบบจะ "ไม่ดึงข้อมูลเมนูอาหาร" เด็ดขาด
+          return; // จบการทำงานตรงนี้
         }
 
-        // 5. ✅ ถ้าร้านเปิด ให้สั่งดึงเมนูอาหารทันที
-        const loadMenuTask = fetchActiveMenus();
-
-        // 6. ⚡️ รอให้ทั้งข้อมูล LINE และข้อมูลเมนู โหลดเสร็จสมบูรณ์ทั้งคู่
+        // ✅ ถ้าร้านเปิด ให้โชว์หน้าเมนู + ตะกร้า และเริ่มดึงข้อมูลเมนู
+        document.getElementById('menu-page').style.display = 'block';
+        document.getElementById('footer-cart').style.display = 'flex';
+        
+        const loadMenuTask = fetchActiveMenus(); // จะไปโชว์ตัวหมุนโหลดเมนูในฟังก์ชันนี้
         const [isLiffReady] = await Promise.all([initLiffTask, loadMenuTask]);
 
-        // 7. เมื่อข้อมูลพร้อม อัปเดตหน้าจอให้ลูกค้าเห็น
         if (isLiffReady) {
           document.getElementById('profile-img').src = userProfile.pictureUrl;
           document.getElementById('profile-name').innerText = userProfile.displayName;
@@ -375,12 +372,24 @@
     // 3. จัดการเมนูและตะกร้า
     // ==========================================
     async function fetchActiveMenus() {
+      const container = document.getElementById('product-list');
+      
+      // 🔴 แทรกตัวหมุนโหลดเมนูอาหาร (หลังจากยืนยันแล้วว่าร้านเปิด)
+      container.innerHTML = `
+        <div class="col-12 text-center py-5">
+          <div class="spinner-border mb-3" role="status" style="color: var(--salmon-orange) !important; width: 2.5rem; height: 2.5rem;"></div><br>
+          <span class="fw-bold" style="color: var(--salmon-orange);">กำลังเตรียมเมนูอาหาร...</span>
+        </div>`;
+
+      // จากนั้นดึงข้อมูลจากฐานข้อมูลตามปกติ
       const { data, error } = await supabaseClient
         .from('menus')
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true }) 
         .order('created_at', { ascending: false });
+
+      // ... (โค้ดดึงข้อมูลด้านล่างให้คงไว้เหมือนเดิมครับ) ...
 
       const container = document.getElementById('product-list');
       if (error) {
