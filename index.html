@@ -145,11 +145,11 @@
     
    <!-- ================= หน้าจอแจ้งเตือนเมื่อปิดรับออเดอร์ ================= -->
     <div id="store-closed-banner" class="text-center py-5" style="display: none; background: white; border-radius: 16px; box-shadow: 0 8px 25px rgba(26, 54, 93, 0.08);">
-      <div style="font-size: 4rem; margin-bottom: 10px;">⛔</div>
-      <h4 class="fw-bold text-danger mb-3">ขณะนี้ ปิดรับออเดอร์แล้ว</h4>
+      <div style="font-size: 4rem; margin-bottom: 10px;">🥺💤</div>
+      <h4 class="fw-bold text-danger mb-3" style="font-size: 1.3rem;">ขณะนี้ร้าน EMMiE Mor ได้ปิดรับออเดอร์แล้ว</h4>
       <p class="text-muted" style="font-size: 1rem;">
-        แอดมินกำลังสรุปยอดเพื่อจัดเตรียมวัตถุดิบครับ<br>
-        ระบบจะเปิดรับออเดอร์ใหม่ในรอบถัดไป
+        ระบบจะเปิดรับออเดอร์ใหม่ในรอบถัดไป<br>
+        ขอบคุณที่สนใจและมาเป็นลูกค้าของเราครับ
       </p>
     </div>
 
@@ -285,32 +285,35 @@
     let myPendingOrders = [];
 
     // ==========================================
-    // 2. โหลดระบบตอนเปิดหน้าเว็บ (สำหรับ GitHub Pages)
+    // 2. โหลดระบบตอนเปิดหน้าเว็บ (ปรับลอจิกโหลดแบบคู่ขนาน ⚡️)
     // ==========================================
     window.onload = async function() {
       try {
-        // เชื่อมต่อ Supabase แบบปกติได้เลย เพราะไม่ได้อยู่ใน Iframe แล้ว
+        // 1. เชื่อมต่อ Supabase
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        await liff.init({ liffId: LIFF_ID });
-        
-        // บังคับล็อกอินผ่าน LINE แบบ 100%
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
+        // 2. ⚡️ สั่งให้โหลด LINE (LIFF) ทำงานอยู่เบื้องหลังทันที (ไม่ต้องรอให้เสร็จ)
+        const initLiffTask = (async () => {
+          try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) {
+              liff.login();
+              return false; // หยุดการทำงานชั่วคราว รอให้ลูกค้าล็อกอินเสร็จ
+            }
+            const profile = await liff.getProfile();
+            userProfile = {
+              userId: profile.userId,
+              displayName: profile.displayName,
+              pictureUrl: profile.pictureUrl
+            };
+            return true;
+          } catch (err) {
+            console.error("LIFF Error:", err);
+            return false;
+          }
+        })();
 
-        const profile = await liff.getProfile();
-        userProfile = {
-          userId: profile.userId,
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl
-        };
-        
-        document.getElementById('profile-img').src = userProfile.pictureUrl;
-        document.getElementById('profile-name').innerText = userProfile.displayName;
-
-        // เช็คสถานะ เปิด-ปิด ร้าน
+        // 3. ⚡️ สั่งดึง "สถานะร้านค้า" มาเช็คก่อน (ดึงไปพร้อมๆ กับ LIFF เลยเพื่อประหยัดเวลา)
         const { data: storeData } = await supabaseClient.from('store_settings').select('*').eq('id', 1).single();
         
         let isStoreOpen = storeData ? storeData.is_open : true; 
@@ -323,7 +326,9 @@
           else isStoreOpen = false;
         }
         
+        // 4. 🔴 ตรวจสอบสถานะร้าน "ก่อน" ที่จะดึงเมนู
         if (!isStoreOpen) {
+          // ซ่อนตะกร้า และโชว์ป้ายร้านปิดทันที
           document.getElementById('menu-page').style.display = 'none';
           document.getElementById('footer-cart').style.display = 'none';
           const hint = document.getElementById('order-more-hint');
@@ -336,12 +341,30 @@
             const openStr = new Date(storeData.open_datetime).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
             banner.innerHTML += `<div class="mt-4 text-primary fw-bold px-3 py-2 bg-light rounded" style="display:inline-block;">เปิดรับออเดอร์รอบถัดไป:<br><span class="fs-5">${openStr} น.</span></div>`;
           }
-          await checkActiveOrder(); 
-          return; 
+
+          // รอแค่ข้อมูล LINE โหลดเสร็จเพื่อนำมายืนยันตัวตนดึงออเดอร์เก่า
+          const isLiffReady = await initLiffTask;
+          if (isLiffReady) {
+            document.getElementById('profile-img').src = userProfile.pictureUrl;
+            document.getElementById('profile-name').innerText = userProfile.displayName;
+            await checkActiveOrder(); 
+          }
+          return; // ⛔️ สั่งจบการทำงานตรงนี้ ระบบจะ "ไม่ดึงข้อมูลเมนูอาหาร" เด็ดขาด
         }
 
-        await fetchActiveMenus();
-        await checkActiveOrder();
+        // 5. ✅ ถ้าร้านเปิด ให้สั่งดึงเมนูอาหารทันที
+        const loadMenuTask = fetchActiveMenus();
+
+        // 6. ⚡️ รอให้ทั้งข้อมูล LINE และข้อมูลเมนู โหลดเสร็จสมบูรณ์ทั้งคู่
+        const [isLiffReady] = await Promise.all([initLiffTask, loadMenuTask]);
+
+        // 7. เมื่อข้อมูลพร้อม อัปเดตหน้าจอให้ลูกค้าเห็น
+        if (isLiffReady) {
+          document.getElementById('profile-img').src = userProfile.pictureUrl;
+          document.getElementById('profile-name').innerText = userProfile.displayName;
+          await checkActiveOrder();
+        }
+
       } catch (err) {
         console.error("System Error:", err);
         alert("ระบบขัดข้อง: " + err.message);
